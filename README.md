@@ -7,7 +7,6 @@
 * [Backup First!](#backup-first)
 * [Instructions](#instructions)
 * [History](#history)
-  * [DavidAlfa rewrite](#davidalfa-rewrite)
   * [Working](#working)
   * [Todo](#todo)
 * [Where are Docs?](#where-are-docs)
@@ -64,40 +63,25 @@ More instructions to follow later.
 * Updated branch - for v2.1s, from newer fork: `LuckyTomas`, flawless_testing` branch
 * Merged to master, with Docs, and minor update by Dreamcat4
 
-<a id="davidalfa-rewrite"></a>
-### DavidAlfa rewrite
-
-* Commentary of changes in the forum thread - [Posts starting here](https://www.eevblog.com/forum/reviews/stm32-oled-digital-soldering-station-for-t12-handle/msg3284800/#msg3284800)
-* Those commentary need to be rewritten into this section, right here.
-* Until then, can read development history in the forum posts ^^ above.
-
 Since DavidAlfa rewrite:
 
 * Compatibility for STM32F072 added by DavidAlfa
 * Adapted and refined with many improvements by DavidAlfa
+* Changelog file started by DavidAlfa, available here as [Changelog.md](Changelog.md)
 
-**WARNING:** Tip temperature measurement is still unreliable, this firmware might heat up your iron far above the temperature on display. Use with caution and at own risk!
 
 <a id="working"></a>
 ### Working
 
-This section is no longer valid and needs to be rewritten. DavidAlfa, can you please rewrite this list?
-
-* OLED Display
-* Rotary Encoder
-* Buzzer
-* Wake switch
-* Supply voltage sensor
-* Ambient temperature sensor (might need calibration)
-* Tip temperature read out (might also need calibration)
-* T12 PWM Control (might burn your tip)
+* Buzzer: Untouched, working the same as original fw.
+* Oled: It uses hardware SPI + DMA to transmit each row to the oled screen (128bytes), sends the change row command between chunks and stops DMA after last row is sent. DMA is triggered in each update_display() call.
+* To prevent graphical artifacts, oled_draw() waits for the SPI DMA to stop before drawing the oled buffer.
+* Rotary encoder: untouched and works well.
 
 <a id="todo"></a>
 ### Todo
 
-This section is no longer valid and needs to be rewritten. DavidAlfa, can you please rewrite this list?
-
-* I2C eeprom
+* I2C eeprom - better than writing to 
 
 <a id="where-are-docs"></a>
 ## Where are Docs?
