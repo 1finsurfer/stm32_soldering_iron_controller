@@ -3,42 +3,85 @@
 <!-- MarkdownTOC -->
 
 * [Status](#status)
-    * [Working](#working)
-    * [Todo](#todo)
+* [Warning](#warning)
+* [Backup First!](#backup-first)
+* [Instructions](#instructions)
+* [History](#history)
+  * [Working](#working)
+  * [Todo](#todo)
 * [Where are Docs?](#where-are-docs)
 * [Compatibility](#compatibility)
-* [Critique](#critique)
-* [Backup First!](#backup-first)
 
 <!-- /MarkdownTOC -->
 
-
 <a id="status"></a>
 ## Status
+
+* Tested on STM32F072 (on a QUICKO T12 board). Needs further testing on other MCUs / boards
+* Should be more broadly compatible with other MCUs from STM32 family
+* We need to tweak and do a little back-porting of this code
+* To get it to work again back on the STM32F103 (original v2.1 hardware)
+* DavidAlfa has worked to simplify the project structure and build configuration
+* To make a unified codebase that's more easy to share across different boards / hardware
+
+<a id="warning"></a>
+## Warning
+
+Newer hardware is often inferior! With bad low quality component(s) such as:
+
+* Bad Op-Amp
+* Bad 3v3 Regulator
+
+Which can then result in bad performance / bad temperature regulation.
+
+* It is recommended to chech these above suspect components. And if necessary order better alternatives parts and replace them (before proceeding further).
+* This is especially true for many of the newer v2.1 boards and v3.x boards by KSGER.
+
+<a id="backup-first"></a>
+## Backup First!
+
+The simplest way to backup is actually to buy a new MCU. Then remove the original MCU with hot air, or chipquik, or bizmuth low temperature solder. And set it aside in case the Open Firmware here fails to work. Since there are so many versions of the hardware PCB. KSGER and friends keeps changing them all the time.
+
+Unfortunately we cannot backup the firmware with programmer PC link. This is because the program in the MCU memory is security protected. It cannot be read fully. So the original commercial firmware cannot be backup over SWD protocol, or JTAG whatever. Not for these STMF1xx series MCUs. Sorry to say that. 
+
+<a id="instructions"></a>
+## Instructions
+
+* Developed on STM32CubeIDE - download and use that. This IDE includes the MX code generator
+* And alternative IDE is PlatformIO. Recommended but not tested
+* Being STM32 there is a code generation aspect for the chip pinout
+* Check the .ioc file in STM32CUBEMX, all settings are there
+* Use the same pin names, check setup.h for setting few parameters
+
+More instructions to follow later.
+
+<a id="history"></a>
+## History
 
 * Custom firmware for the chinese kseger soldering iron controller
 * Original version by PTDreamer
 * Updated branch - for v2.1s, from newer fork: `LuckyTomas`, flawless_testing` branch
 * Merged to master, with Docs, and minor update by Dreamcat4
 
-**WARNING:** Tip temperature measurement is still unreliable, this firmware might heat up your iron far above the temperature on display. Use with caution and at own risk!
+Since DavidAlfa rewrite:
+
+* Compatibility for STM32F072 added by DavidAlfa
+* Adapted and refined with many improvements by DavidAlfa
+* Changelog file started by DavidAlfa, available here as [Changelog.md](Changelog.md)
+
 
 <a id="working"></a>
 ### Working
 
-* OLED Display
-* Rotary Encoder
-* Buzzer
-* Wake switch
-* Supply voltage sensor
-* Ambient temperature sensor (might need calibration)
-* Tip temperature read out (might also need calibration)
-* T12 PWM Control (might burn your tip)
+* Buzzer: Untouched, working the same as original fw.
+* Oled: It uses hardware SPI + DMA to transmit each row to the oled screen (128bytes), sends the change row command between chunks and stops DMA after last row is sent. DMA is triggered in each update_display() call.
+* To prevent graphical artifacts, oled_draw() waits for the SPI DMA to stop before drawing the oled buffer.
+* Rotary encoder: untouched and works well.
 
 <a id="todo"></a>
 ### Todo
 
-* I2C eeprom
+* I2C eeprom - better than writing to 
 
 <a id="where-are-docs"></a>
 ## Where are Docs?
@@ -56,49 +99,6 @@ Well which Docs are you looking for?
 
 <a id="compatibility"></a>
 ## Compatibility
-
-Moved to:
-
-* Hardware Compatibility Docs --> https://github.com/dreamcat4/t12-t245-controllers-docs/tree/master/controllers/stm32-t12-oled
-
-This fork is meant for `v2.1s` versions of hardware. And maybe even some `v3.x` who are actually rebranded `2.x` underneath. Mis labeled.
-
-However there are many different versions of 'v2.1S' PCB hardware. Non original PCBs ***might*** work, to a greater or lesser extent. We do not know enough about them yet.
-
-Please read carefully the [Hardware Compatibility Docs](https://github.com/dreamcat4/t12-t245-controllers-docs/tree/master/controllers/stm32-t12-oled). Be sure to:
-
-* **Check hardware before Buying**
-* **Check hardware before Flashing**
-
-Otherwise you might end up with incompatible hardware. Newer hardware is often inferior! With bad low quality component(s) such as:
-
-* Bad Op-Amp
-* Bad 3v3 Regulator
-
-Which can then result in bad performance / a bad temperature regulation.
-
-<a id="critique"></a>
-## Critique
-
-It has been observed (by others) that:
-
-* PTDreamer Open Source Firmware might be inferior. To the CFW firmwares (closed source)
-* PTDreamer Open Source Firmware might be buggy. To the CFW firmwares (closed source)
-* PTDreamer Open Source Firmware might be missing features. To the CFW firmwares (closed source)
-
-It is not clear exactly what the situation is. So make sure to replace MCU before flashing. To preserve the CFW. In case you want to get back to the Original Commercial Firmware (CFW).
-
-* Perhaps some of these issues are because of bad hardware
-* Perhaps some of these issues are because of early PTDreamer version (some new code now, some stuff is improved!)
-
-Otherwise there may be some kind of issue or problem, that's worse for this Open Source version... So you have been warned to replace (backup) the MCU! See next section below:
-
-<a id="backup-first"></a>
-## Backup First!
-
-The simplest way to backup is actually to buy a new MCU. Then remove the original MCU with hot air, or chipquik, or bizmuth low temperature solder. And set it aside in case the Open Firmware here fails to work. Since there are so many versions of the hardware PCB. KSGER and friends keeps changing them all the time.
-
-Unfortunately we cannot backup the firmware with programmer PC link. This is because the program in the MCU memory is security protected. It cannot be read fully. So the original commercial firmware cannot be backup over SWD protocol, or JTAG whatever. Not for these STMF1xx series MCUs. Sorry to say that. 
 
 
 
