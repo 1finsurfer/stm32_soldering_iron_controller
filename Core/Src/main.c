@@ -22,22 +22,21 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "../../Drivers/generalIO/buzzer.h"
-#include "../../Drivers/graphics/ssd1306.h"
-#include "../../Drivers/generalIO/buzzer.h"
-#include "../../Drivers/generalIO/rotary_encoder.h"
-#include "../../Drivers/generalIO/adc_global.h"
-#include "../../Drivers/generalIO/tempsensors.h"
-#include "../../Drivers/generalIO/voltagesensors.h"
-#include "../../Drivers/graphics/gui/screen.h"
-#include "../../Drivers/graphics/gui/gui.h"
-#include "../../Drivers/graphics/gui/debug_screen.h"
+#include "setup.h"
+#include "iron.h"
 #include "pid.h"
 #include "settings.h"
-#include "iron.h"
+#include "adc_global.h"
+#include "buzzer.h"
+#include "buzzer.h"
+#include "rotary_encoder.h"
+#include "tempsensors.h"
+#include "voltagesensors.h"
+#include "ssd1306.h"
+#include "gui.h"
+#include "screen.h"
 #include <stdint.h>
 #include <stdio.h>
-#include "setup.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -128,7 +127,7 @@ int main(void)
 
 
 
-  HAL_TIM_Base_Start_IT(&htim3);
+  HAL_TIM_Base_Start_IT(&BASE_TIMER);
   #ifdef Soft_SPI
   ssd1306_init();
   #else
@@ -138,6 +137,7 @@ int main(void)
   CheckReset();
   restoreSettings();
   setupPIDFromStruct();
+  ADC_Init(&ADC_DEVICE);
   RE_Init(&RE1_Data, ROT_ENC_L_GPIO_Port, ROT_ENC_L_Pin, ROT_ENC_R_GPIO_Port, ROT_ENC_R_Pin, ROT_ENC_BUTTON_GPIO_Port, ROT_ENC_BUTTON_Pin);
   buzzer_init();
   ironInit(&PWM_TIMER,PWM_CHANNEL);
@@ -266,17 +266,6 @@ static void MX_ADC_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN ADC_Init 2 */
-
-
-  ADC_Set(&ADC_DEVICE);
-
-  if(ADC_Cal() != HAL_OK ){
-	  buzzer_alarm_start();
-  }
-  else{
-	  buzzer_short_beep();
-  }
-
 
   /* USER CODE END ADC_Init 2 */
 
@@ -466,7 +455,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(OLED_CS_GPIO_Port, OLED_CS_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, LED_Pin|OLED_DC_Pin|OLED_RST_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, OLED_DC_Pin|OLED_RST_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(BUZZER_GPIO_Port, BUZZER_Pin, GPIO_PIN_RESET);
@@ -478,8 +467,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(OLED_CS_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : LED_Pin OLED_DC_Pin OLED_RST_Pin */
-  GPIO_InitStruct.Pin = LED_Pin|OLED_DC_Pin|OLED_RST_Pin;
+  /*Configure GPIO pins : OLED_DC_Pin OLED_RST_Pin */
+  GPIO_InitStruct.Pin = OLED_DC_Pin|OLED_RST_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -515,20 +504,27 @@ static void MX_GPIO_Init(void)
 void Enable_Soft_SPI_SPI(void){
 	GPIO_InitTypeDef GPIO_InitStruct = {0};
 
-	HAL_SPI_MspDeInit(&hspi2);
-	 /*Configure GPIO pins : LED_Pin OLED_DC_Pin OLED_RST_Pin */
-	 GPIO_InitStruct.Pin = LED_Pin|OLED_DC_Pin|OLED_RST_Pin|OLED_SCK_Pin|OLED_SDO_Pin;
+	HAL_SPI_MspDeInit(&SPI_DEVICE);
+	 /*Configure GPIO pins : SCK_Pin */
+	 GPIO_InitStruct.Pin = 	SCK_Pin;
 	 GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
 	 GPIO_InitStruct.Pull = GPIO_NOPULL;
 	 GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
-	 HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+	 HAL_GPIO_Init(SCK_GPIO_Port, &GPIO_InitStruct);
+
+	 /*Configure GPIO pins : SDO_Pin */
+	 GPIO_InitStruct.Pin = 	SDO_Pin;
+	 GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	 GPIO_InitStruct.Pull = GPIO_NOPULL;
+	 GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+	 HAL_GPIO_Init(SDO_GPIO_Port, &GPIO_InitStruct);
 }
 
 
-void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi){
+void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *_hspi){
 	static uint8_t OledRow=0;
 
-	if(hspi != &hspi2){		return; 	}
+	if(_hspi != &SPI_DEVICE){		return; 	}
 	if(OledRow>7){															//We sent the last row of the OLED buffer data. Return without retriggering DMA.
 				OledRow=0;
 				oled_status=oled_idle;
@@ -537,7 +533,11 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi){
 		}
 	oled_status=oled_sending_cmd;
 	write_cmd(0xB0|OledRow);
+	#ifdef SH1106_FIX
 	write_cmd(0x02);
+	#else
+	write_cmd(0x00);
+	#endif
 	write_cmd(0x10);
 	oled_status=oled_sending_data;
 	Oled_Clear_CS();
@@ -547,11 +547,11 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi){
 	}
 }
 
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *_htim) {
 	static uint16_t UpdateCount=0,PIDUpdateCount=0;
 	//Timer set every 1mS
 
-	if(htim == &htim3)  {
+	if(_htim == &BASE_TIMER)  {
 
 		if(++PIDUpdateCount>=PID_Refresh_ms){		//Timer for updating Tip temperature and PID calculation
 			PIDUpdateCount=0;
@@ -568,10 +568,13 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 }
 
 
-void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef* hadc){
+void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef* _hadc){
 }
 
-void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc){
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* _hadc){
+	if(_hadc != &ADC_DEVICE){
+		return;
+	}
 	// DMA callback is called every 300uS or less.
 	// No sense of keeping the DMA in circular mode.
 	// We trigger the ADC DMA conversion every PID set in the TMR3 callback
@@ -608,8 +611,8 @@ void CheckReset(void){
 	 UG_SetForecolor(C_WHITE);
 	 UG_SetBackcolor(C_BLACK);
 	 UG_PutString(10,20,"HOLD BUTTON");
-	 UG_PutString(10,32," TO RESET");
-	 UG_PutString(10,44,"DEFAULTS!!");
+	 UG_PutString(18,32,"TO RESET");
+	 UG_PutString(16,44,"DEFAULTS!!");
 	 update_display();
 
 	 uint16_t ResetTimer= HAL_GetTick();

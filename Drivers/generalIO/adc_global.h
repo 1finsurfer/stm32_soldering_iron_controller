@@ -9,17 +9,17 @@
 #define GENERALIO_ADC_GLOBAL_H_
 
 
-#include "stm32f0xx_hal.h"
-#include "setup.h"
+#include "main.h"
 
 typedef struct {
-	uint16_t reference;
-	uint16_t cold_junction;
-	uint16_t supply;
-	uint16_t iron;
+	uint16_t ADC_CH1;
+	uint16_t ADC_CH2;
+	uint16_t ADC_CH3;
+	uint16_t ADC_CH4;
 	//uint16_t int_temp;
 	//uint16_t int_ref;
 } adc_measures_t;
+
 
 typedef struct{
 	  uint16_t	*adc_buffer;
@@ -29,16 +29,17 @@ typedef struct{
 	  uint16_t  rolling_buffer[RollingBufferSize];		//from Setup.h
 	  uint16_t	rolling_buffer_index;
 	  uint16_t	last_avg;
+	  uint8_t	init;
 } RollingTypeDef_t;
 
 typedef enum { adc_dma_active, adc_dma_idle } adc_dma_status_t;
 
 extern adc_dma_status_t adc_dma_status;
-extern volatile adc_measures_t adc_measures[Adc_Buffer_Size];
+extern adc_measures_t adc_measures[Adc_Buffer_Size];
 
 uint16_t ADC_to_mV (uint16_t adc);
 void RollingUpdate(RollingTypeDef_t* Data);
-void ADC_Set(ADC_HandleTypeDef *adc);
+void ADC_Init(ADC_HandleTypeDef *adc);
 uint8_t ADC_Cal(void);
 uint8_t ADC_Stop_DMA(void);
 uint8_t  ADC_Start_DMA(void);

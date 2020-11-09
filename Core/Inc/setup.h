@@ -1,12 +1,12 @@
 
 #ifndef SETUP_H_
 #define SETUP_H_
+/*
+ * Setup.h file
+*/
 
 /*
  * Software adjustments
- *
- * Adjust all the delays in steps of 1mS
- *
  */
 
 #define Adc_Buffer_Size 	16				// ADC DMA buffer size Buffer[ADC_Buffer_Size][Adc_Buffer_Elements]
@@ -17,34 +17,33 @@
 #define PID_Refresh_ms		100				// PID calculation and ADC update interval
 
 #define RollingBufferSize 	1				// Buffer size for storing rolling averages
-											// 1= Takes average from ADC buffer
-											// Leave like this, if enabled No iron detection doesn't work
+											// 1= Takes average from ADC buffer but doesn't make use of rolling buffer
+											// Leave like this, if enabled the no iron detection doesn't work
 
-#define No_Iron_Delay		500				// Increase if it bounces between "NO IRON" and "iron temperature" screen
-											// when there is no iron plugged
+#define No_Iron_Delay_mS		500				// In mS. Increase if it bounces between "NO IRON" and "iron temperature" screen when there is no iron plugged
+#define CurrTemp_Save_Time_S	10				// Minimum time in secs for saving temperature setpoint changes to store the value in flash. Warning, too often will degrade the flash quickly!
+											// Set to 0 for no saving. Always start in default temp.
 /*
- * Hardware adjustments
- * Change these settings as configured in CubeMX to a
+ * HARDWARE SETTINGS
+ * If you change the timers, pwm channel, adc, spi devices,
+ * you will have to set them here too for the rest of the program to adjust.
  */
-
-#define PWM_TIMER 			htim17			// Timer set
-#define PWM_CHANNEL 		TIM_CHANNEL_1	// PWM Channel set
-#define CHxN								// Using CHxN Output
-//#define CHx								// Using CHx Output
-#define ADC_DEVICE 			hadc			// ADC set
-#define SPI_DEVICE 			hspi2			// SPI set
-
+											// If your screen doesn't work, and want to discard a SPI problem
 //#define Soft_SPI							// Uncomment to disable Hardware SPI with DMA and use software SPI
-#define OLED_SCK_Pin 		GPIO_PIN_13		// Set these as adjusted in CubeMX
-#define OLED_SCK_GPIO_Port 	GPIOB			//
-#define OLED_SDO_Pin 		GPIO_PIN_15		//
-#define OLED_SDO_GPIO_Port 	GPIOB			//
+#define SH1106_FIX							// For 1.3" OLED
+//#define JBC
 
-#define WAKE_input			HAL_GPIO_ReadPin(WAKE_GPIO_Port, WAKE_Pin)
-#define BUTTON_input		HAL_GPIO_ReadPin(ROT_ENC_BUTTON_GPIO_Port, ROT_ENC_BUTTON_Pin)
-
-
-
+#define BASE_TIMER			htim3			// 1mS base timer for timing functions
+#define PWM_TIMER 			htim17			// PWM Timer
+#define PWM_CHANNEL 		TIM_CHANNEL_1	// PWM Timer Channel
+#define CHxN								// Using CHxN Output type
+//#define CHx								// Using CHx Output type
+#define ADC_DEVICE 			hadc			// ADC device
+#define SPI_DEVICE 			hspi2			// SPI device
+#define ADC_CH1 			VREF			// ADC 1st used channel
+#define ADC_CH2 			NTC				// ADC 2nd used channel
+#define ADC_CH3 			V_INPUT			// ADC 3rd used channel
+#define ADC_CH4 			IRON_TEMP		// ADC 4th used channel
 
 
 #define _Error_Handler(__FILE__, __LINE__); Error_Handler();
